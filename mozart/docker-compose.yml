@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  control-plane:
+    build: .
+    container_name: control-plane
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - shared-data:/shared
+    depends_on:
+      - redis
+
+  sidecar-agent:
+    build: .
+    container_name: sidecar-agent
+    restart: always
+    command: python -c "import main; main.sidecar_agent()"
+    volumes:
+      - shared-data:/shared
+    depends_on:
+      - redis
+
+  fake-app:
+    build: .
+    container_name: fake-app
+    restart: always
+    command: python -c "import main; main.fake_application()"
+    volumes:
+      - shared-data:/shared
+    depends_on:
+      - redis
+      - sidecar-agent
+
+volumes:
+  shared-data:
